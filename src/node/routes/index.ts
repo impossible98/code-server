@@ -1,21 +1,22 @@
 import { logger } from "@coder/logger"
-import bodyParser from "body-parser"
 import cookieParser from "cookie-parser"
 import * as express from "express"
 import { promises as fs } from "fs"
 import http from "http"
 import * as path from "path"
 import * as tls from "tls"
+import { CreateVSServer } from "../../../lib/vscode/src/vs/server/types"
 import * as pluginapi from "../../../typings/pluginapi"
 import { HttpCode, HttpError } from "../../common/http"
 import { plural } from "../../common/util"
 import { AuthType, DefaultedArgs } from "../cli"
-import { rootPath } from "../constants"
+import { rootPath, version as codeServerVersion } from "../constants"
 import { Heart } from "../heart"
 import { ensureAuthenticated, redirect, replaceTemplates } from "../http"
 import { PluginAPI } from "../plugin"
-import { getMediaMime, paths } from "../util"
+import { getMediaMime, loadAMDModule, paths } from "../util"
 import { wrapper } from "../wrapper"
+import { Router as WsRouter } from "../wsRouter"
 import * as apps from "./apps"
 import * as domainProxy from "./domainProxy"
 import * as health from "./health"
@@ -25,7 +26,6 @@ import * as pathProxy from "./pathProxy"
 // static is a reserved keyword.
 import * as _static from "./static"
 import * as update from "./update"
-import * as vscode from "./vscode"
 
 /**
  * Register all routes and middleware.
@@ -124,8 +124,37 @@ export const register = async (
     wrapper.onDispose(() => pluginApi.dispose())
   }
 
-  app.use(bodyParser.json())
-  app.use(bodyParser.urlencoded({ extended: true }))
+  app.use(express.json())
+  app.use(express.urlencoded({ extended: true }))
+
+  const vscodeServerMain = await loadAMDModule<CreateVSServer>("vs/server/entry", "createVSServer")
+
+  const serverUrl = new URL(`${args.cert ? "https" : "http"}://${args.host}:${args.port}`)
+  const vscodeServer = await vscodeServerMain({
+    codeServerVersion,
+    serverUrl,
+    args,
+    authed: args.auth !== AuthType.None,
+    disableUpdateCheck: !!args["disable-update-check"],
+    csStaticBase: "/static",
+    base: "/",
+    remoteAuthority: serverUrl.hostname,
+  })
+
+  const vscode = {
+    router: express.Router(),
+    wsRouter: WsRouter(),
+  }
+
+  vscode.router.all("*", ensureAuthenticated, (req, res) => {
+    vscodeServer.emit("request", req, res)
+  })
+
+  vscode.wsRouter.ws("/", ensureAuthenticated, (req) => {
+    vscodeServer.emit("upgrade", req)
+
+    req.resume()
+  })
 
   app.use("/", vscode.router)
   wsApp.use("/", vscode.wsRouter.router)

@@ -279,7 +279,13 @@ export type Complete<T> = {
 	[P in keyof Required<T>]: Pick<T, P> extends Required<Pick<T, P>> ? T[P] : (NonNullable<T[P]>);
 };
 
+/**
+ * Marks readonly properties as wriatable.
+ */
+export type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
 export function NotImplementedProxy<T>(name: string): { new(): T } {
+
 	return <any>class {
 		constructor() {
 			return new Proxy({}, {

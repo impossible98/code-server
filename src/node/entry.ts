@@ -58,6 +58,8 @@ async function entry(): Promise<void> {
   }
 
   if (shouldRunVsCodeCli(args)) {
+    console.log(JSON.stringify(args))
+
     return runVsCodeCli(args)
   }
 

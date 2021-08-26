@@ -34,6 +34,8 @@ export interface IProductConfiguration {
 	/** @coder BEGIN */
 	/** @deprecated Should be replaced with code-oss version. */
 	readonly codeServerVersion?: string;
+	readonly authed?: boolean;
+	readonly logoutEndpointUrl: string;
 	/** @coder END */
 
 	readonly version: string;

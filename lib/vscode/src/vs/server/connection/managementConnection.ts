@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ConsoleLogger } from 'vs/platform/log/common/log';
+import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractConnection } from 'vs/server/connection/abstractConnection';
 import { ServerProtocol } from 'vs/server/protocol';
 
@@ -11,7 +11,7 @@ import { ServerProtocol } from 'vs/server/protocol';
  * Used for all the IPC channels.
  */
 export class ManagementConnection extends AbstractConnection {
-	public constructor(protocol: ServerProtocol, logService: ConsoleLogger) {
+	public constructor(protocol: ServerProtocol, logService: ILogService) {
 		super(protocol, logService, 'management');
 
 		protocol.onDidDispose(() => this.dispose('Explicitly closed'));

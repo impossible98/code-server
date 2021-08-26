@@ -1,85 +1,86 @@
 import { field, logger } from "@coder/logger"
-import * as cp from "child_process"
+// import * as cp from "child_process"
 import http from "http"
-import * as path from "path"
-import { CliMessage, OpenCommandPipeArgs } from "../../typings/ipc"
+// import * as path from "path"
 import { plural } from "../common/util"
 import { createApp, ensureAddress } from "./app"
 import { AuthType, DefaultedArgs, Feature } from "./cli"
 import { coderCloudBind } from "./coder_cloud"
 import { commit, version } from "./constants"
 import { register } from "./routes"
-import { humanPath, isFile, open } from "./util"
+import { humanPath, open } from "./util"
 
 export const runVsCodeCli = (args: DefaultedArgs): void => {
   logger.debug("forking vs code cli...")
-  const vscode = cp.fork(path.resolve(__dirname, "../../lib/vscode/out/vs/server/fork"), [], {
-    env: {
-      ...process.env,
-      CODE_SERVER_PARENT_PID: process.pid.toString(),
-    },
-  })
-  vscode.once("message", (message: any) => {
-    logger.debug("got message from VS Code", field("message", message))
-    if (message.type !== "ready") {
-      logger.error("Unexpected response waiting for ready response", field("type", message.type))
-      process.exit(1)
-    }
-    const send: CliMessage = { type: "cli", args }
-    vscode.send(send)
-  })
-  vscode.once("error", (error) => {
-    logger.error("Got error from VS Code", field("error", error))
-    process.exit(1)
-  })
-  vscode.on("exit", (code) => process.exit(code || 0))
+
+  // const vscode = cp.fork(path.resolve(__dirname, "../../lib/vscode/out/bootstrap-fork"), [], {
+  //   env: {
+  //     ...process.env,
+  //     CODE_SERVER_PARENT_PID: process.pid.toString(),
+  //     VSCODE_AMD_ENTRYPOINT: "cli",
+  //     VSCODE_PIPE_LOGGING: "true",
+  //     VSCODE_VERBOSE_LOGGING: "true",
+  //     VSCODE_HANDLES_UNCAUGHT_ERRORS: "true",
+  //   },
+  // })
+
+  // vscode.once("message", (message: any) => {
+  //   logger.debug("got message from VS Code", field("message", message))
+  //   if (message.type !== "ready") {
+  //     logger.error("Unexpected response waiting for ready response", field("type", message.type))
+  //     process.exit(1)
+  //   }
+  //   const send: CliMessage = { type: "cli", args }
+  //   vscode.send(send)
+  // })
+  // vscode.once("error", (error) => {
+  //   logger.error("Got error from VS Code", field("error", error))
+  //   process.exit(1)
+  // })
+  // vscode.on("exit", (code) => process.exit(code || 0))
 }
 
 export const openInExistingInstance = async (args: DefaultedArgs, socketPath: string): Promise<void> => {
-  const pipeArgs: OpenCommandPipeArgs & { fileURIs: string[] } = {
-    type: "open",
-    folderURIs: [],
-    fileURIs: [],
-    forceReuseWindow: args["reuse-window"],
-    forceNewWindow: args["new-window"],
-  }
-
-  for (let i = 0; i < args._.length; i++) {
-    const fp = path.resolve(args._[i])
-    if (await isFile(fp)) {
-      pipeArgs.fileURIs.push(fp)
-    } else {
-      pipeArgs.folderURIs.push(fp)
-    }
-  }
-
-  if (pipeArgs.forceNewWindow && pipeArgs.fileURIs.length > 0) {
-    logger.error("--new-window can only be used with folder paths")
-    process.exit(1)
-  }
-
-  if (pipeArgs.folderURIs.length === 0 && pipeArgs.fileURIs.length === 0) {
-    logger.error("Please specify at least one file or folder")
-    process.exit(1)
-  }
-
-  const vscode = http.request(
-    {
-      path: "/",
-      method: "POST",
-      socketPath,
-    },
-    (response) => {
-      response.on("data", (message) => {
-        logger.debug("got message from VS Code", field("message", message.toString()))
-      })
-    },
-  )
-  vscode.on("error", (error: unknown) => {
-    logger.error("got error from VS Code", field("error", error))
-  })
-  vscode.write(JSON.stringify(pipeArgs))
-  vscode.end()
+  // const pipeArgs: OpenCommandPipeArgs & { fileURIs: string[] } = {
+  //   type: "open",
+  //   folderURIs: [],
+  //   fileURIs: [],
+  //   forceReuseWindow: args["reuse-window"],
+  //   forceNewWindow: args["new-window"],
+  // }
+  // for (let i = 0; i < args._.length; i++) {
+  //   const fp = path.resolve(args._[i])
+  //   if (await isFile(fp)) {
+  //     pipeArgs.fileURIs.push(fp)
+  //   } else {
+  //     pipeArgs.folderURIs.push(fp)
+  //   }
+  // }
+  // if (pipeArgs.forceNewWindow && pipeArgs.fileURIs.length > 0) {
+  //   logger.error("--new-window can only be used with folder paths")
+  //   process.exit(1)
+  // }
+  // if (pipeArgs.folderURIs.length === 0 && pipeArgs.fileURIs.length === 0) {
+  //   logger.error("Please specify at least one file or folder")
+  //   process.exit(1)
+  // }
+  // const vscode = http.request(
+  //   {
+  //     path: "/",
+  //     method: "POST",
+  //     socketPath,
+  //   },
+  //   (response) => {
+  //     response.on("data", (message) => {
+  //       logger.debug("got message from VS Code", field("message", message.toString()))
+  //     })
+  //   },
+  // )
+  // vscode.on("error", (error: unknown) => {
+  //   logger.error("got error from VS Code", field("error", error))
+  // })
+  // vscode.write(JSON.stringify(pipeArgs))
+  // vscode.end()
 }
 
 export const runCodeServer = async (args: DefaultedArgs): Promise<http.Server> => {

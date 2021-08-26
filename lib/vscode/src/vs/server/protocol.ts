@@ -8,7 +8,7 @@ import * as net from 'net';
 import { VSBuffer } from 'vs/base/common/buffer';
 import { ISocket, PersistentProtocol } from 'vs/base/parts/ipc/common/ipc.net';
 import { WebSocketNodeSocket } from 'vs/base/parts/ipc/node/ipc.net';
-import { ConsoleLogger } from 'vs/platform/log/common/log';
+import { ILogService } from 'vs/platform/log/common/log';
 import { ConnectionTypeRequest, HandshakeMessage } from 'vs/platform/remote/common/remoteAgentConnection';
 import { ConnectionOptions } from 'vs/server/connection/abstractConnection';
 
@@ -32,7 +32,7 @@ export class ServerProtocol extends PersistentProtocol {
 
 	constructor(
 		socket: ISocket,
-		private readonly logger: ConsoleLogger,
+		private readonly logger: ILogService,
 		private readonly options: ConnectionOptions,
 		// `initialChunk` is likely not used.
 		initialChunk?: VSBuffer | null,
@@ -51,7 +51,7 @@ export class ServerProtocol extends PersistentProtocol {
 	 *
 	 * @remark this may be undefined if the socket or its parent container is disposed.
 	 */
-	private getSendHandle(): net.Socket | undefined {
+	public getSendHandle(): net.Socket | undefined {
 		return this.getSocket().socket.socket;
 	}
 
